@@ -33,6 +33,7 @@
                     <arguments>
                         <argument>--module-path</argument>
                         <modulepath/>
+                        <argument>-Dpolyglot.engine.WarnInterpreterOnly=false</argument>
                         <argument>--module</argument>
                         <argument>WebsocketPolyfill/${exec.mainClass}</argument>
                     </arguments>
