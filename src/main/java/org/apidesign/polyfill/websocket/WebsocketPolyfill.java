@@ -10,24 +10,26 @@ public final class WebsocketPolyfill {
 
     public static void prepare(Context ctx) {
       var code = """
-      function WebSocketServer(config) {
-          var wss = {
-              on : function(type, callback) {
-                 var ws = {
-                    on : function(type, callback) {
-                      print("on ws with " + type + " with " + callback);
-                    }
-                 }
-                 print("on wss with " + type + " with " + callback);
-                 ws.on("connection", callback);
-              }
+      (function (jvm) {
+          globalThis.WebSocketServer = function(config) {
+              var wss = {
+                  on : function(type, callback) {
+                     var ws = {
+                        on : function(type, callback) {
+                          print("on ws with " + type + " with " + callback);
+                        }
+                     }
+                     print("on wss with " + type + " with " + callback);
+                     ws.on("connection", callback);
+                  }
+              };
+              return wss;
           };
-          return wss;
-      }
+      })
       """;
       var polyfill = Source.newBuilder("js", code, "websocket-polyfill.js")
           .buildLiteral();
-      ctx.eval(polyfill);
+      ctx.eval(polyfill).execute();
     }
 
     public static void main(String[] args) throws Exception {
