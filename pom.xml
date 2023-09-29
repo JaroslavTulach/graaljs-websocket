@@ -10,12 +10,28 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.11.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.frgaal</groupId>
+                        <artifactId>compiler-maven-plugin</artifactId>
+                        <version>20.0.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <compilerId>frgaal</compilerId>
+                    <source>20</source>
+                    <target>11</target>
+                    <compilerArgs>
+                        <arg>-Xlint:deprecation</arg>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.2</version>
+                <version>3.3.0</version>
                 <configuration>
                   <archive>
                       <manifest>
@@ -53,11 +69,15 @@
             <artifactId>polyglot</artifactId>
             <version>23.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>io.helidon.webserver</groupId>
+            <artifactId>helidon-webserver-websocket</artifactId>
+            <version>4.0.0-RC1</version>
+        </dependency>
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <netbeans.compile.on.save>none</netbeans.compile.on.save>
         <exec.mainClass>org.apidesign.polyfill.websocket.WebsocketPolyfill</exec.mainClass>
     </properties>
 </project>
