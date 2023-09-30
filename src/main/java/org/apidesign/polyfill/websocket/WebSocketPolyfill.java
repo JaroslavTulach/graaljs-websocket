@@ -17,8 +17,8 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
-public final class WebsocketPolyfill {
-    private WebsocketPolyfill() {
+public final class WebSocketPolyfill {
+    private WebSocketPolyfill() {
     }
 
     public static void prepare(Context ctx) {
@@ -81,7 +81,7 @@ public final class WebsocketPolyfill {
     }
 
     public static void main(String[] args) throws Exception {
-        var demo = WebsocketPolyfill.class.getResource("/WebsocketServerDemo.js");
+        var demo = WebSocketPolyfill.class.getResource("/WebsocketServerDemo.js");
         try (var ctx = Context.create()) {
             prepare(ctx);
             var src = Source.newBuilder("js", demo)

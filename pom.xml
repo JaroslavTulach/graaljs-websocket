@@ -56,7 +56,7 @@
                         <argument>-Dpolyglot.engine.WarnInterpreterOnly=false</argument>
                         <argument>${exec.vmArgs}</argument>
                         <argument>--module</argument>
-                        <argument>WebsocketPolyfill/${exec.mainClass}</argument>
+                        <argument>WebSocketPolyfill/${exec.mainClass}</argument>
                     </arguments>
                 </configuration>
             </plugin>
@@ -83,7 +83,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.compile.on.save>none</netbeans.compile.on.save>
-        <exec.mainClass>org.apidesign.polyfill.websocket.WebsocketPolyfill</exec.mainClass>
+        <exec.mainClass>org.apidesign.polyfill.websocket.WebSocketPolyfill</exec.mainClass>
         <exec.vmArgs>-Dignore</exec.vmArgs>
     </properties>
 </project>
