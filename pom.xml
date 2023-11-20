@@ -32,11 +32,28 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.3.0</version>
                 <configuration>
-                  <archive>
-                      <manifest>
-                          <mainClass>${exec.mainClass}</mainClass>
-                      </manifest>
-                  </archive>
+                    <archive>
+                        <manifest>
+                            <mainClass>${exec.mainClass}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.seovic.maven.plugins</groupId>
+                <artifactId>npm-maven-plugin</artifactId>
+                <version>1.0.4</version>
+                <executions>
+                    <execution>
+                        <id>install-ydoc-server</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>install</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <workingDir>${basedir}/src/main/resources/y-websocket</workingDir>
                 </configuration>
             </plugin>
             <plugin>

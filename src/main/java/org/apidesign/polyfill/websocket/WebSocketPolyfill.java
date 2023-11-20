@@ -10,11 +10,14 @@ import io.helidon.webserver.websocket.WsRouting;
 import io.helidon.websocket.WsListener;
 import io.helidon.websocket.WsSession;
 import io.helidon.websocket.WsUpgradeException;
+import java.io.File;
+import java.io.IOException;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
 public final class WebSocketPolyfill {
@@ -24,6 +27,9 @@ public final class WebSocketPolyfill {
     public static void prepare(Context ctx) {
         var code = """
         (function (jvm) {
+            globalThis.clearTimeout = function() {}
+            globalThis.clearInterval = function() {}
+
             globalThis.WebSocketServer = function(config) {
                 var webSocketServerData = jvm(null, "", config);
                 var wss = {
@@ -81,10 +87,23 @@ public final class WebSocketPolyfill {
     }
 
     public static void main(String[] args) throws Exception {
-        var demo = WebSocketPolyfill.class.getResource("/WebsocketServerDemo.js");
-        try (var ctx = Context.create()) {
+        var path = "/y-websocket/dist/y-websocket.cjs";
+        var demo = WebSocketPolyfill.class.getResource(path);
+        if (demo == null) {
+            throw new IOException("Cannot find " + path);
+        }
+        var commonJsRoot = new File(demo.toURI()).getParent();
+        try (
+            var ctx = Context.newBuilder("js")
+                .allowIO(IOAccess.ALL)
+                .allowExperimentalOptions(true)
+                .option("js.commonjs-require", "true")
+                .option("js.commonjs-require-cwd", commonJsRoot)
+                .build()
+        ) {
             prepare(ctx);
             var src = Source.newBuilder("js", demo)
+                    .mimeType("application/javascript+module")
                     .build();
             ctx.eval(src);
             System.in.read();
