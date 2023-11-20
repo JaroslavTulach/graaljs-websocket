@@ -12,23 +12,18 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <dependencies>
-                    <!--
                     <dependency>
                         <groupId>org.frgaal</groupId>
                         <artifactId>compiler-maven-plugin</artifactId>
-                        <version>20.0.1</version>
+                        <version>21.0.0</version>
                     </dependency>
-                    -->
                 </dependencies>
                 <configuration>
-                    <!--
                     <compilerId>frgaal</compilerId>
-                    -->
                     <source>21</source>
                     <target>21</target>
                     <compilerArgs>
                         <arg>-Xlint:deprecation</arg>
-                        <arg>--enable-preview</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
