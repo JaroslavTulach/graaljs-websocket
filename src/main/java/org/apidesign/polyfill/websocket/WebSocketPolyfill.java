@@ -103,7 +103,9 @@ public final class WebSocketPolyfill {
             var data = new WebSocketData(this, onConnect);
             if (server == null) {
                 var b = WebServer.builder().port(port);
-                b.addRouting(WsRouting.builder().endpoint("/", data).build());
+                b.addRouting(
+                   WsRouting.builder().endpoint("/", data)
+                );
                 this.server = b.build();
                 this.server.start();
             }
