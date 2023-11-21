@@ -39,10 +39,15 @@ public final class WebSocketPolyfill {
 
             globalThis.crypto = {
                 subtle : 0,
-                randomUUID : function() { throw 'randomUUID' },
-                getRandomValues : function(typedArray) {
+                randomUUID : function() {
                    debugger;
-                   return typedArray;
+                   throw 'randomUUID';
+                },
+                getRandomValues : function(arr) {
+                   for (let i = 0; i < arr.length; i++) {
+                     arr[i] = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+                   }
+                   return arr;
                 }
             };
 
