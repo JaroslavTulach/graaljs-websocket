@@ -2,3 +2,4 @@ target
 src/main/resources/node_modules
 src/main/resources/package-lock.json
 
+src/main/js/node_modules/

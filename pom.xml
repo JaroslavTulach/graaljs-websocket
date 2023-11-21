@@ -58,12 +58,12 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <script>dist</script>
+                            <script>build</script>
                         </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <workingDir>${basedir}/src/main/resources/y-websocket</workingDir>
+                    <workingDir>${basedir}/src/main/js</workingDir>
                 </configuration>
             </plugin>
             <plugin>

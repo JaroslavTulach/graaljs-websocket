@@ -4,6 +4,6 @@ WebSocket Polyfill for Graal.js to execute [y-websocket server](https://github.c
 ### Run
 
 ```bash
-graaljs-websocket$ git submodule update
-graaljs-websocket$ JAVA_HOME=/jdk-21/ mvn package exec:exec
+$ export JAVA_HOME=/jdk-21/
+graaljs-websocket$ mvn package exec:exec
 ```

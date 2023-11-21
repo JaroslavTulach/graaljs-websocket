@@ -27,9 +27,37 @@ public final class WebSocketPolyfill {
     public static void prepare(Context ctx) {
         var code = """
         (function (jvm) {
-            globalThis.clearTimeout = function() {}
-            globalThis.clearInterval = function() {}
+            globalThis.clearTimeout = function() {
+                debugger;
+            }
+            globalThis.clearInterval = function() {
+                debugger;
+            }
+            globalThis.setInterval = function() {
+                debugger;
+            }
 
+            globalThis.crypto = {
+                subtle : 0,
+                randomUUID : function() { throw 'randomUUID' },
+                getRandomValues : function(typedArray) {
+                   debugger;
+                   return typedArray;
+                }
+            };
+
+            globalThis.WebSocket = function(config) {
+                debugger;
+                return {};
+            };
+            globalThis.Buffer = function(config) {
+                debugger;
+                return {};
+            };
+            globalThis.Buffer.from = function() {
+                debugger;
+                return {};
+            };
             globalThis.WebSocketServer = function(config) {
                 var webSocketServerData = jvm(null, "", config);
                 var wss = {
@@ -87,7 +115,7 @@ public final class WebSocketPolyfill {
     }
 
     public static void main(String[] args) throws Exception {
-        var path = "/y-websocket/dist/y-websocket.cjs";
+        var path = "/all-y-websocket.js";
         var demo = WebSocketPolyfill.class.getResource(path);
         if (demo == null) {
             throw new IOException("Cannot find " + path);
@@ -106,6 +134,7 @@ public final class WebSocketPolyfill {
                     .mimeType("application/javascript+module")
                     .build();
             ctx.eval(src);
+            System.out.println("Press enter to exit");
             System.in.read();
         }
     }
