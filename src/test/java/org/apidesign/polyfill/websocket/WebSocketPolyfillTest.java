@@ -18,6 +18,7 @@ public class WebSocketPolyfillTest {
     public static void prepareContext() throws Exception {
         ctx = Context.newBuilder("js")
             .allowIO(IOAccess.ALL)
+//            .option("dap", "")
             .build();
         WebSocketPolyfill.prepare(ctx);
     }
@@ -31,6 +32,21 @@ public class WebSocketPolyfillTest {
     public void allTests() throws Exception {
         var allTest = WebSocketPolyfillTest.class.getResource("/all-tests.js");
         assertNotNull("Generated tests found", allTest);
+
+        ctx.eval("js", """
+        globalThis.importScripts = function() {
+            debugger;
+        };
+        globalThis.process= {
+            env : "none"
+        };
+        globalThis.__vitest_worker__ = {
+            config : {},
+            environment : { name : "Graal.js" }
+        };
+        globalThis.location = "${l}";
+        """.replace("${l}", allTest.toExternalForm()));
+
         var code = Source.newBuilder("js", allTest)
              .mimeType("application/javascript+module")
              .build();

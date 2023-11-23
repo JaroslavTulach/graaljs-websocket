@@ -27,6 +27,8 @@ public final class WebSocketPolyfill {
     public static void prepare(Context ctx) {
         var code = """
         (function (jvm) {
+            var timer = 0;
+
             globalThis.clearTimeout = function() {
                 debugger;
             }
@@ -35,6 +37,10 @@ public final class WebSocketPolyfill {
             }
             globalThis.setInterval = function() {
                 debugger;
+            }
+            globalThis.setTimeout = function() {
+                debugger;
+                return ++timer;
             }
 
             globalThis.crypto = {
