@@ -61,6 +61,16 @@
                             <script>build</script>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>dist-ydoc-test</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <script>build-test</script>
+                        </configuration>
+                    </execution>
                 </executions>
                 <configuration>
                     <workingDir>${basedir}/src/main/js</workingDir>
@@ -100,6 +110,12 @@
             <groupId>io.helidon.webserver</groupId>
             <artifactId>helidon-webserver-websocket</artifactId>
             <version>4.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
     <properties>
