@@ -1,24 +1,21 @@
 package org.apidesign.polyfill.websocket;
 
-import io.helidon.common.buffers.BufferData;
-import io.helidon.http.Headers;
-import io.helidon.http.HttpPrologue;
 import java.util.Arrays;
-
-import io.helidon.webserver.WebServer;
-import io.helidon.webserver.websocket.WsRouting;
-import io.helidon.websocket.WsListener;
-import io.helidon.websocket.WsSession;
-import io.helidon.websocket.WsUpgradeException;
-import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.graalvm.polyglot.io.IOAccess;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
+
+import io.helidon.common.buffers.BufferData;
+import io.helidon.http.Headers;
+import io.helidon.http.HttpPrologue;
+import io.helidon.webserver.WebServer;
+import io.helidon.webserver.websocket.WsRouting;
+import io.helidon.websocket.WsListener;
+import io.helidon.websocket.WsSession;
+import io.helidon.websocket.WsUpgradeException;
 
 public final class WebSocketPolyfill {
     private WebSocketPolyfill() {
@@ -38,7 +35,7 @@ public final class WebSocketPolyfill {
             globalThis.setInterval = function() {
                 debugger;
             }
-            globalThis.setTimeout = function() {
+            globalThis.setTimeout = function(fn, delay, arg1, arg2, arg3) {
                 debugger;
                 return ++timer;
             }
@@ -124,32 +121,6 @@ public final class WebSocketPolyfill {
             }
         });
     }
-
-    public static void main(String[] args) throws Exception {
-        var path = "/all-y-websocket.js";
-        var demo = WebSocketPolyfill.class.getResource(path);
-        if (demo == null) {
-            throw new IOException("Cannot find " + path);
-        }
-        var commonJsRoot = new File(demo.toURI()).getParent();
-        try (
-            var ctx = Context.newBuilder("js")
-                .allowIO(IOAccess.ALL)
-                .allowExperimentalOptions(true)
-                .option("js.commonjs-require", "true")
-                .option("js.commonjs-require-cwd", commonJsRoot)
-                .build()
-        ) {
-            prepare(ctx);
-            var src = Source.newBuilder("js", demo)
-                    .mimeType("application/javascript+module")
-                    .build();
-            ctx.eval(src);
-            System.out.println("Press enter to exit");
-            System.in.read();
-        }
-    }
-
     private static final class WebSocketServerData {
         private final int port;
         private WebServer server;
