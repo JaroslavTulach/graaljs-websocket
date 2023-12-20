@@ -91,14 +91,31 @@
                     </arguments>
                 </configuration>
             </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <version>3.2.3</version>
+              <configuration>
+                <systemPropertyVariables>
+                  <inspectPort>${inspectPort}</inspectPort>
+                </systemPropertyVariables>
+              </configuration>
+            </plugin>
         </plugins>
     </build>
     <dependencies>
         <dependency>
-            <groupId>org.graalvm.js</groupId>
-            <artifactId>js-language</artifactId>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>js</artifactId>
             <version>23.1.1</version>
+            <type>pom</type>
             <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.polyglot</groupId>
+            <artifactId>inspect</artifactId>
+            <version>23.1.1</version>
+            <type>pom</type>
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
@@ -116,18 +133,12 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>dap</artifactId>
-            <version>23.1.1</version>
-            <type>pom</type>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.compile.on.save>none</netbeans.compile.on.save>
         <exec.mainClass>org.apidesign.polyfill.websocket.Main</exec.mainClass>
-        <exec.vmArgs>-Dignore</exec.vmArgs>
+        <inspectPort></inspectPort>
+        <exec.vmArgs>-DinspectPort=${inspectPort}</exec.vmArgs>
     </properties>
 </project>

@@ -16,10 +16,13 @@ public class WebSocketPolyfillTest {
 
     @BeforeClass
     public static void prepareContext() throws Exception {
-        ctx = Context.newBuilder("js")
-            .allowIO(IOAccess.ALL)
-//            .option("dap", "")
-            .build();
+        var b = Context.newBuilder("js")
+            .allowIO(IOAccess.ALL);
+        var chromePort = Integer.getInteger("inspectPort", -1);
+        if (chromePort > 0) {
+            b.option("inspect", ":" + chromePort);
+        }
+        ctx = b.build();
         WebSocketPolyfill.prepare(ctx);
     }
 
