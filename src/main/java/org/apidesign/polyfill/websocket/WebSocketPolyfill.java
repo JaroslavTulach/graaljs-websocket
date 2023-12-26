@@ -1,8 +1,10 @@
 package org.apidesign.polyfill.websocket;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
+import org.apidesign.Resources;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -18,76 +20,23 @@ import io.helidon.websocket.WsSession;
 import io.helidon.websocket.WsUpgradeException;
 
 public final class WebSocketPolyfill {
+
+    private static final String WEBSOCKET_POLYFILL_JS_FILE = "websocket-polyfill.js";
+    private static final String WEBSOCKET_POLYFILL_JS_CODE;
+
+    static {
+        try {
+            WEBSOCKET_POLYFILL_JS_CODE = Resources.read(WEBSOCKET_POLYFILL_JS_FILE);
+        } catch (IOException ex) {
+            throw new RuntimeException("Failed to read " + WEBSOCKET_POLYFILL_JS_FILE + " resource.", ex);
+        }
+    }
+
     private WebSocketPolyfill() {
     }
 
     public static void prepare(Context ctx) {
-        var code = """
-        (function (jvm) {
-            var timer = 0;
-
-            globalThis.clearTimeout = function() {
-                debugger;
-            }
-            globalThis.clearInterval = function() {
-                debugger;
-            }
-            globalThis.setInterval = function() {
-                debugger;
-            }
-            globalThis.setTimeout = function(fn, delay, arg1, arg2, arg3) {
-                debugger;
-                return ++timer;
-            }
-
-            globalThis.crypto = {
-                subtle : 0,
-                randomUUID : function() {
-                   debugger;
-                   throw 'randomUUID';
-                },
-                getRandomValues : function(arr) {
-                   for (let i = 0; i < arr.length; i++) {
-                     arr[i] = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-                   }
-                   return arr;
-                }
-            };
-
-            globalThis.WebSocket = function(config) {
-                debugger;
-                return {};
-            };
-            globalThis.Buffer = function(config) {
-                debugger;
-                return {};
-            };
-            globalThis.Buffer.from = function() {
-                debugger;
-                return {};
-            };
-            globalThis.WebSocketServer = function(config) {
-                var webSocketServerData = jvm(null, "", config);
-                var wss = {
-                    on : function(type, callback) {
-                       var webSocketData = jvm(webSocketServerData, type, callback);
-                       var ws = {
-                          on : function(type, callback) {
-                            jvm(webSocketData, type, callback);
-                          },
-                          send : function(msg) {
-                            jvm(webSocketData, "send", msg);
-                          }
-                       }
-                       callback(ws);
-                    }
-                };
-                return wss;
-            };
-        })
-        """;
-        var polyfill = Source.newBuilder("js", code, "websocket-polyfill.js")
-                .buildLiteral();
+        Source polyfill = Source.newBuilder("js", WEBSOCKET_POLYFILL_JS_CODE, WEBSOCKET_POLYFILL_JS_FILE).buildLiteral();
         ctx.eval(polyfill).execute(new ProxyExecutable() {
             @Override
             public Object execute(Value... arguments) {
@@ -100,7 +49,8 @@ public final class WebSocketPolyfill {
                     }
                     case WebSocketServerData webSocketServerData ->
                         switch (command) {
-                            case "connection" -> webSocketServerData.onConnect(arguments[2]);
+                            case "connection" ->
+                                webSocketServerData.onConnect(arguments[2]);
                             default ->
                                 throw new IllegalStateException(command);
                         };
@@ -121,7 +71,9 @@ public final class WebSocketPolyfill {
             }
         });
     }
+
     private static final class WebSocketServerData {
+
         private final int port;
         private WebServer server;
 
@@ -134,7 +86,7 @@ public final class WebSocketPolyfill {
             if (server == null) {
                 var b = WebServer.builder().port(port);
                 b.addRouting(
-                   WsRouting.builder().endpoint("/", data)
+                        WsRouting.builder().endpoint("/", data)
                 );
                 this.server = b.build();
                 this.server.start();
@@ -144,6 +96,7 @@ public final class WebSocketPolyfill {
     }
 
     private static final class WebSocketData implements WsListener {
+
         private final Value onConnect;
         private final WebSocketServerData webSocketServerData;
         Value error;
