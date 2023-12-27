@@ -1,19 +1,21 @@
 (function (jvm) {
-    var timer = 0;
 
-    globalThis.clearTimeout = function() {
-        debugger;
+    globalThis.setInterval = function(func, delay, ...args) {
+        return jvm(null, 'set-interval', func, delay, args);
     }
-    globalThis.clearInterval = function() {
-        debugger;
+
+    globalThis.clearInterval = function(intervalID) {
+        jvm(null, 'clear-interval', intervalID);
     }
-    globalThis.setInterval = function() {
-        debugger;
+
+    globalThis.setTimeout = function(func, delay, ...args) {
+        return jvm(null, 'set-timeout', func, delay, args);
     }
-    globalThis.setTimeout = function(fn, delay, arg1, arg2, arg3) {
-        debugger;
-        return ++timer;
+
+    globalThis.clearTimeout = function(timeoutID) {
+        jvm(null, 'clear-timeout', timeoutID);
     }
+
 
     globalThis.crypto = {
         subtle : 0,
@@ -42,7 +44,7 @@
         return {};
     };
     globalThis.WebSocketServer = function(config) {
-        var webSocketServerData = jvm(null, "", config);
+        var webSocketServerData = jvm(null, 'new-web-socket-server-data', config);
         var wss = {
             on : function(type, callback) {
                var webSocketData = jvm(webSocketServerData, type, callback);

@@ -8,6 +8,7 @@ import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
 
 public class Main {
+
     private Main() {
     }
 
@@ -28,9 +29,10 @@ public class Main {
             b.option("inspect", ":" + chromePort);
         }
         try (
-            var ctx = b.build()
+            var ctx = b.build();
+            var timers = new Timers();
         ) {
-            WebSocketPolyfill.prepare(ctx);
+            WebSocketPolyfill.prepare(ctx, timers);
             var src = Source.newBuilder("js", demo)
                     .mimeType("application/javascript+module")
                     .build();

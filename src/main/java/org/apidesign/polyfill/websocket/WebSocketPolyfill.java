@@ -3,6 +3,8 @@ package org.apidesign.polyfill.websocket;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 
 import org.apidesign.Resources;
 import org.graalvm.polyglot.Context;
@@ -21,6 +23,12 @@ import io.helidon.websocket.WsUpgradeException;
 
 public final class WebSocketPolyfill {
 
+    private static final String NEW_WEB_SOCKET_SERVER_DATA = "new-web-socket-server-data";
+    private static final String SET_INTERVAL = "set-interval";
+    private static final String CLEAR_INTERVAL = "clear-interval";
+    private static final String SET_TIMEOUT = "set-timeout";
+    private static final String CLEAR_TIMEOUT = "clear-timeout";
+
     private static final String WEBSOCKET_POLYFILL_JS_FILE = "websocket-polyfill.js";
     private static final String WEBSOCKET_POLYFILL_JS_CODE;
 
@@ -35,7 +43,7 @@ public final class WebSocketPolyfill {
     private WebSocketPolyfill() {
     }
 
-    public static void prepare(Context ctx) {
+    public static void prepare(Context ctx, Timers timers) {
         Source polyfill = Source.newBuilder("js", WEBSOCKET_POLYFILL_JS_CODE, WEBSOCKET_POLYFILL_JS_FILE).buildLiteral();
         ctx.eval(polyfill).execute(new ProxyExecutable() {
             @Override
@@ -44,8 +52,36 @@ public final class WebSocketPolyfill {
                 System.err.println(command + " " + Arrays.toString(arguments));
                 return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
                     case null -> {
-                        var port = arguments[2].getMember("port").asInt();
-                        yield new WebSocketServerData(port);
+                        switch (command) {
+                            case NEW_WEB_SOCKET_SERVER_DATA -> {
+                                var port = arguments[2].getMember("port").asInt();
+                                yield new WebSocketServerData(port);
+                            }
+                            case SET_INTERVAL -> {
+                                var func = arguments[2].as(Consumer.class);
+                                var delay = arguments[3].asLong();
+                                var args = arguments[4].as(Object[].class);
+                                yield timers.setInterval(func, delay, args);
+                            }
+                            case CLEAR_INTERVAL -> {
+                                var intervalId = arguments[2].as(UUID.class);
+                                timers.clearInterval(intervalId);
+                                yield null;
+                            }
+                            case SET_TIMEOUT -> {
+                                var func = arguments[2].as(Consumer.class);
+                                var delay = arguments[3].asLong();
+                                var args = arguments[4].as(Object[].class);
+                                yield timers.setTimeout(func, delay, args);
+                            }
+                            case CLEAR_TIMEOUT -> {
+                                var timeoutId = arguments[2].as(UUID.class);
+                                timers.clearTimeout(timeoutId);
+                                yield null;
+                            }
+                            default ->
+                                throw new IllegalStateException(command);
+                        }
                     }
                     case WebSocketServerData webSocketServerData ->
                         switch (command) {

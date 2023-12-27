@@ -10,6 +10,7 @@ import org.junit.Test;
 
 public class WebSocketPolyfillTest {
     private static Context ctx;
+    private static Timers timers;
 
     public WebSocketPolyfillTest() {
     }
@@ -23,11 +24,13 @@ public class WebSocketPolyfillTest {
             b.option("inspect", ":" + chromePort);
         }
         ctx = b.build();
-        WebSocketPolyfill.prepare(ctx);
+        timers = new Timers();
+        WebSocketPolyfill.prepare(ctx, timers);
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
+        timers.close();
         ctx.close();
     }
 
