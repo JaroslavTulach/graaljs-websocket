@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apidesign.Resources;
 import org.graalvm.polyglot.Context;
@@ -30,6 +33,7 @@ public final class WebSocketPolyfill {
     private static final String CLEAR_TIMEOUT = "clear-timeout";
 
     private static final String WEBSOCKET_POLYFILL_JS_FILE = "websocket-polyfill.js";
+    private static final String WEBSOCKET_POLYFILL_JS_PATH = "/websocket-polyfill.js";
     private static final String WEBSOCKET_POLYFILL_JS_CODE;
 
     static {
@@ -43,69 +47,80 @@ public final class WebSocketPolyfill {
     private WebSocketPolyfill() {
     }
 
-    public static void prepare(Context ctx, Timers timers) {
+    public static CompletableFuture<Context> prepare(Supplier<Context> contextSupplier, ExecutorService executor) throws IOException {
+        CompletableFuture<Context> futureContext = new CompletableFuture<>();
         Source polyfill = Source.newBuilder("js", WEBSOCKET_POLYFILL_JS_CODE, WEBSOCKET_POLYFILL_JS_FILE).buildLiteral();
-        ctx.eval(polyfill).execute(new ProxyExecutable() {
-            @Override
-            public Object execute(Value... arguments) {
-                var command = arguments[1].asString();
-                System.err.println(command + " " + Arrays.toString(arguments));
-                return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
-                    case null -> {
-                        switch (command) {
-                            case NEW_WEB_SOCKET_SERVER_DATA -> {
-                                var port = arguments[2].getMember("port").asInt();
-                                yield new WebSocketServerData(port);
+        Timers timers = new Timers(executor);
+
+        executor.execute(() -> {
+            Context ctx = contextSupplier.get();
+
+            ctx.eval(polyfill).execute(new ProxyExecutable() {
+                @Override
+                public Object execute(Value... arguments) {
+                    var command = arguments[1].asString();
+                    System.err.println(command + " " + Arrays.toString(arguments));
+                    return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
+                        case null -> {
+                            switch (command) {
+                                case NEW_WEB_SOCKET_SERVER_DATA -> {
+                                    var port = arguments[2].getMember("port").asInt();
+                                    yield new WebSocketServerData(port);
+                                }
+                                case SET_INTERVAL -> {
+                                    var func = arguments[2].as(Consumer.class);
+                                    var delay = arguments[3].asLong();
+                                    var args = arguments[4].as(Object[].class);
+                                    yield timers.setInterval(func, delay, args);
+                                }
+                                case CLEAR_INTERVAL -> {
+                                    var intervalId = arguments[2].as(UUID.class);
+                                    timers.clearInterval(intervalId);
+                                    yield null;
+                                }
+                                case SET_TIMEOUT -> {
+                                    var func = arguments[2].as(Consumer.class);
+                                    var delay = arguments[3].asLong();
+                                    var args = arguments[4].as(Object[].class);
+                                    yield timers.setTimeout(func, delay, args);
+                                }
+                                case CLEAR_TIMEOUT -> {
+                                    var timeoutId = arguments[2].as(UUID.class);
+                                    timers.clearTimeout(timeoutId);
+                                    yield null;
+                                }
+                                default ->
+                                    throw new IllegalStateException(command);
                             }
-                            case SET_INTERVAL -> {
-                                var func = arguments[2].as(Consumer.class);
-                                var delay = arguments[3].asLong();
-                                var args = arguments[4].as(Object[].class);
-                                yield timers.setInterval(func, delay, args);
-                            }
-                            case CLEAR_INTERVAL -> {
-                                var intervalId = arguments[2].as(UUID.class);
-                                timers.clearInterval(intervalId);
-                                yield null;
-                            }
-                            case SET_TIMEOUT -> {
-                                var func = arguments[2].as(Consumer.class);
-                                var delay = arguments[3].asLong();
-                                var args = arguments[4].as(Object[].class);
-                                yield timers.setTimeout(func, delay, args);
-                            }
-                            case CLEAR_TIMEOUT -> {
-                                var timeoutId = arguments[2].as(UUID.class);
-                                timers.clearTimeout(timeoutId);
-                                yield null;
-                            }
-                            default ->
-                                throw new IllegalStateException(command);
                         }
-                    }
-                    case WebSocketServerData webSocketServerData ->
-                        switch (command) {
-                            case "connection" ->
-                                webSocketServerData.onConnect(arguments[2]);
-                            default ->
-                                throw new IllegalStateException(command);
-                        };
-                    case WebSocketData webSocketData ->
-                        switch (command) {
-                            case "send" ->
-                                webSocketData.send(arguments[2]);
-                            case "error" ->
-                                webSocketData.error = arguments[2];
-                            case "message" ->
-                                webSocketData.message = arguments[2];
-                            default ->
-                                throw new IllegalStateException(command);
-                        };
-                    default ->
-                        throw new IllegalStateException(command);
-                };
-            }
+                        case WebSocketServerData webSocketServerData ->
+                            switch (command) {
+                                case "connection" ->
+                                    webSocketServerData.onConnect(arguments[2]);
+                                default ->
+                                    throw new IllegalStateException(command);
+                            };
+                        case WebSocketData webSocketData ->
+                            switch (command) {
+                                case "send" ->
+                                    webSocketData.send(arguments[2]);
+                                case "error" ->
+                                    webSocketData.error = arguments[2];
+                                case "message" ->
+                                    webSocketData.message = arguments[2];
+                                default ->
+                                    throw new IllegalStateException(command);
+                            };
+                        default ->
+                            throw new IllegalStateException(command);
+                    };
+                }
+            });
+
+            futureContext.complete(ctx);
         });
+
+        return futureContext;
     }
 
     private static final class WebSocketServerData {

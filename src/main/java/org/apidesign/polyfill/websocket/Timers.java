@@ -9,35 +9,37 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public final class Timers implements AutoCloseable {
+final class Timers {
 
+    private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
     private static final CompletableFuture<Void> NULL_ACTION = CompletableFuture.completedFuture(null);
 
-    private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+    private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor((r) -> {
+        var thread = new Thread(r);
+        thread.setDaemon(true);
+        return thread;
+    });
     private final Map<UUID, Future<Void>> actions = new HashMap<>();
 
     private final ExecutorService executor;
-
-    public Timers() {
-        this.executor = Executors.newSingleThreadExecutor();
-    }
 
     public Timers(ExecutorService executor) {
         this.executor = executor;
     }
 
     public UUID setTimeout(Consumer<Object[]> func, long delay, Object... args) {
-        Executor delayedExecutor = CompletableFuture.delayedExecutor(delay, TimeUnit.MILLISECONDS, executor);
+        Executor delayedExecutor = CompletableFuture.delayedExecutor(delay, TIME_UNIT, executor);
         CompletableFuture<Void> delayedAction = CompletableFuture.runAsync(run(func, args), delayedExecutor);
 
         return registerAction(delayedAction);
     }
 
     public UUID setInterval(Consumer<Object[]> func, long delay, Object... args) {
-        Future<Void> scheduledAction = scheduleAtFixedRate(run(func, args), delay, TimeUnit.MILLISECONDS);
+        ScheduledFuture<Void> scheduledAction = scheduleAtFixedRate(run(func, args), delay);
 
         return registerAction(scheduledAction);
     }
@@ -45,32 +47,35 @@ public final class Timers implements AutoCloseable {
     public void clearTimeout(UUID actionId) {
         Future<Void> action = actions.getOrDefault(actionId, NULL_ACTION);
         action.cancel(true);
+        actions.remove(actionId);
     }
 
     public void clearInterval(UUID actionId) {
         clearTimeout(actionId);
     }
 
-    private Runnable run(Consumer<Object[]> func, Object[] arg) {
+    private static Runnable run(Consumer<Object[]> func, Object[] arg) {
         return () -> {
             func.accept(arg);
         };
     }
 
-    private Future<Void> scheduleAtFixedRate(Runnable r, long delay, TimeUnit unit) {
-        return (Future<Void>) scheduledExecutor.scheduleAtFixedRate(() -> executor.execute(r), delay, delay, unit);
+    private ScheduledFuture<Void> scheduleAtFixedRate(Runnable r, long delay) {
+        return (ScheduledFuture<Void>) scheduledExecutor.scheduleAtFixedRate(() -> executor.execute(r), delay, delay, TIME_UNIT);
     }
 
-    private UUID registerAction(Future<Void> action) {
-        UUID newActionId = UUID.randomUUID();
-        actions.put(newActionId, action);
+    private UUID registerAction(CompletableFuture<Void> action) {
+        UUID actionId = UUID.randomUUID();
+        actions.put(actionId, action.whenCompleteAsync((v, t) -> actions.remove(actionId), executor));
 
-        return newActionId;
+        return actionId;
     }
 
-    @Override
-    public void close() {
-        executor.close();
-        scheduledExecutor.close();
+    private UUID registerAction(ScheduledFuture<Void> action) {
+        UUID actionId = UUID.randomUUID();
+        actions.put(actionId, action);
+
+        return actionId;
     }
+
 }
