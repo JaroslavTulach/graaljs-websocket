@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-final class Timers {
+final class TimersPolyfill {
 
     private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
     private static final CompletableFuture<Void> NULL_ACTION = CompletableFuture.completedFuture(null);
@@ -27,7 +27,7 @@ final class Timers {
 
     private final ExecutorService executor;
 
-    public Timers(ExecutorService executor) {
+    public TimersPolyfill(ExecutorService executor) {
         this.executor = executor;
     }
 

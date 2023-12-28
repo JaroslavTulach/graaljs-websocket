@@ -37,7 +37,7 @@ public final class WebSocketPolyfill {
 
     public static CompletableFuture<Context> prepare(Supplier<Context> contextSupplier, ExecutorService executor) {
         CompletableFuture<Context> futureContext = new CompletableFuture<>();
-        Timers timers = new Timers(executor);
+        TimersPolyfill timers = new TimersPolyfill(executor);
         Source polyfill = Source
                 .newBuilder("js", WebSocketPolyfill.class.getResource(WEBSOCKET_POLYFILL_JS))
                 .buildLiteral();
