@@ -2,7 +2,6 @@ package org.apidesign.polyfill.websocket;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
@@ -76,7 +75,7 @@ public final class WebSocketPolyfill {
                             yield timers.setInterval(func, delay, args);
                         }
                         case CLEAR_INTERVAL -> {
-                            var intervalId = arguments[2].as(UUID.class);
+                            var intervalId = arguments[2].asHostObject();
                             timers.clearInterval(intervalId);
                             yield null;
                         }
@@ -87,7 +86,7 @@ public final class WebSocketPolyfill {
                             yield timers.setTimeout(func, delay, args);
                         }
                         case CLEAR_TIMEOUT -> {
-                            var timeoutId = arguments[2].as(UUID.class);
+                            var timeoutId = arguments[2].asHostObject();
                             timers.clearTimeout(timeoutId);
                             yield null;
                         }
