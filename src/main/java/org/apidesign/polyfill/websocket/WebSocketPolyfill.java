@@ -1,6 +1,5 @@
 package org.apidesign.polyfill.websocket;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,7 +8,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.apidesign.Resources;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -32,25 +30,17 @@ public final class WebSocketPolyfill {
     private static final String SET_TIMEOUT = "set-timeout";
     private static final String CLEAR_TIMEOUT = "clear-timeout";
 
-    private static final String WEBSOCKET_POLYFILL_JS_FILE = "websocket-polyfill.js";
-    private static final String WEBSOCKET_POLYFILL_JS_PATH = "/websocket-polyfill.js";
-    private static final String WEBSOCKET_POLYFILL_JS_CODE;
-
-    static {
-        try {
-            WEBSOCKET_POLYFILL_JS_CODE = Resources.read(WEBSOCKET_POLYFILL_JS_FILE);
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to read " + WEBSOCKET_POLYFILL_JS_FILE + " resource.", ex);
-        }
-    }
+    private static final String WEBSOCKET_POLYFILL_JS = "websocket-polyfill.js";
 
     private WebSocketPolyfill() {
     }
 
-    public static CompletableFuture<Context> prepare(Supplier<Context> contextSupplier, ExecutorService executor) throws IOException {
+    public static CompletableFuture<Context> prepare(Supplier<Context> contextSupplier, ExecutorService executor) {
         CompletableFuture<Context> futureContext = new CompletableFuture<>();
-        Source polyfill = Source.newBuilder("js", WEBSOCKET_POLYFILL_JS_CODE, WEBSOCKET_POLYFILL_JS_FILE).buildLiteral();
         Timers timers = new Timers(executor);
+        Source polyfill = Source
+                .newBuilder("js", WebSocketPolyfill.class.getResource(WEBSOCKET_POLYFILL_JS))
+                .buildLiteral();
 
         executor.execute(() -> {
             Context ctx = contextSupplier.get();
