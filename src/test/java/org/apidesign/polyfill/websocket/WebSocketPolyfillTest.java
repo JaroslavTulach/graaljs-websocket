@@ -29,7 +29,7 @@ public class WebSocketPolyfillTest {
             b.option("inspect", ":" + chromePort);
         }
         executor = Executors.newSingleThreadExecutor();
-        futureContext = WebSocketPolyfill.prepare(b::build, executor);
+        futureContext = WebSocketPolyfill.prepare(b, executor);
     }
 
     @AfterClass

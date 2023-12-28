@@ -32,7 +32,7 @@ public class Main {
         try (
             var executor = Executors.newSingleThreadExecutor();
         ) {
-            var futureContext = WebSocketPolyfill.prepare(b::build, executor);
+            var futureContext = WebSocketPolyfill.prepare(b, executor);
             var src = Source.newBuilder("js", demo)
                     .mimeType("application/javascript+module")
                     .build();

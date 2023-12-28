@@ -6,7 +6,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
@@ -35,7 +34,7 @@ public final class WebSocketPolyfill {
     private WebSocketPolyfill() {
     }
 
-    public static CompletableFuture<Context> prepare(Supplier<Context> contextSupplier, ExecutorService executor) {
+    public static CompletableFuture<Context> prepare(Context.Builder contextBuilder, ExecutorService executor) {
         CompletableFuture<Context> futureContext = new CompletableFuture<>();
         TimersPolyfill timers = new TimersPolyfill(executor);
         Source polyfill = Source
@@ -43,7 +42,7 @@ public final class WebSocketPolyfill {
                 .buildLiteral();
 
         executor.execute(() -> {
-            Context ctx = contextSupplier.get();
+            Context ctx = contextBuilder.build();
 
             ctx.eval(polyfill).execute(new ProxyExecutable() {
                 @Override
