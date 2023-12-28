@@ -1,7 +1,5 @@
 package org.apidesign.polyfill.websocket;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -26,12 +24,11 @@ final class TimersPolyfill {
     }
 
     public Object setTimeout(Consumer<Object[]> func, long delay, Object... args) {
-        Executor delayedExecutor = CompletableFuture.delayedExecutor(delay, TIME_UNIT, executor);
-        return CompletableFuture.runAsync(run(func, args), delayedExecutor);
+        return scheduledExecutor.schedule(execute(func, args), delay, TIME_UNIT);
     }
 
     public Object setInterval(Consumer<Object[]> func, long delay, Object... args) {
-        return scheduledExecutor.scheduleAtFixedRate(() -> executor.execute(run(func, args)), delay, delay, TIME_UNIT);
+        return scheduledExecutor.scheduleAtFixedRate(execute(func, args), delay, delay, TIME_UNIT);
     }
 
     public void clearTimeout(Object actionId) {
@@ -44,10 +41,8 @@ final class TimersPolyfill {
         clearTimeout(actionId);
     }
 
-    private static Runnable run(Consumer<Object[]> func, Object[] arg) {
-        return () -> {
-            func.accept(arg);
-        };
+    private Runnable execute(Consumer<Object[]> func, Object[] arg) {
+        return () -> executor.execute(() -> func.accept(arg));
     }
 
 }
