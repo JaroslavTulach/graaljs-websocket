@@ -1,29 +1,23 @@
 package org.apidesign.polyfill.websocket;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 final class TimersPolyfill {
 
     private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
-    private static final CompletableFuture<Void> NULL_ACTION = CompletableFuture.completedFuture(null);
 
     private final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor((r) -> {
         var thread = new Thread(r);
         thread.setDaemon(true);
         return thread;
     });
-    private final Map<UUID, Future<Void>> actions = new HashMap<>();
 
     private final ExecutorService executor;
 
@@ -31,26 +25,22 @@ final class TimersPolyfill {
         this.executor = executor;
     }
 
-    public UUID setTimeout(Consumer<Object[]> func, long delay, Object... args) {
+    public Object setTimeout(Consumer<Object[]> func, long delay, Object... args) {
         Executor delayedExecutor = CompletableFuture.delayedExecutor(delay, TIME_UNIT, executor);
-        CompletableFuture<Void> delayedAction = CompletableFuture.runAsync(run(func, args), delayedExecutor);
-
-        return registerAction(delayedAction);
+        return CompletableFuture.runAsync(run(func, args), delayedExecutor);
     }
 
-    public UUID setInterval(Consumer<Object[]> func, long delay, Object... args) {
-        ScheduledFuture<Void> scheduledAction = scheduleAtFixedRate(run(func, args), delay);
-
-        return registerAction(scheduledAction);
+    public Object setInterval(Consumer<Object[]> func, long delay, Object... args) {
+        return scheduledExecutor.scheduleAtFixedRate(() -> executor.execute(run(func, args)), delay, delay, TIME_UNIT);
     }
 
-    public void clearTimeout(UUID actionId) {
-        Future<Void> action = actions.getOrDefault(actionId, NULL_ACTION);
-        action.cancel(true);
-        actions.remove(actionId);
+    public void clearTimeout(Object actionId) {
+        if (actionId instanceof Future action) {
+            action.cancel(true);
+        }
     }
 
-    public void clearInterval(UUID actionId) {
+    public void clearInterval(Object actionId) {
         clearTimeout(actionId);
     }
 
@@ -58,24 +48,6 @@ final class TimersPolyfill {
         return () -> {
             func.accept(arg);
         };
-    }
-
-    private ScheduledFuture<Void> scheduleAtFixedRate(Runnable r, long delay) {
-        return (ScheduledFuture<Void>) scheduledExecutor.scheduleAtFixedRate(() -> executor.execute(r), delay, delay, TIME_UNIT);
-    }
-
-    private UUID registerAction(CompletableFuture<Void> action) {
-        UUID actionId = UUID.randomUUID();
-        actions.put(actionId, action.whenCompleteAsync((v, t) -> actions.remove(actionId), executor));
-
-        return actionId;
-    }
-
-    private UUID registerAction(ScheduledFuture<Void> action) {
-        UUID actionId = UUID.randomUUID();
-        actions.put(actionId, action);
-
-        return actionId;
     }
 
 }
