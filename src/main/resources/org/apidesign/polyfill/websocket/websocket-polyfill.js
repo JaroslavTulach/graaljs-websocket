@@ -16,7 +16,6 @@
         jvm(null, 'clear-timeout', timeoutID);
     }
 
-
     globalThis.crypto = {
         subtle : 0,
         randomUUID : function() {
