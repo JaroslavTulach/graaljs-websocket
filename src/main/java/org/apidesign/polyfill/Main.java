@@ -1,4 +1,4 @@
-package org.apidesign.polyfill.websocket;
+package org.apidesign.polyfill;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
 import org.apidesign.polyfill.timers.TimersPolyfill;
+import org.apidesign.polyfill.websocket.WebSocketPolyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
@@ -17,7 +18,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         var path = "/all-y-websocket.js";
-        var demo = WebSocketPolyfill.class.getResource(path);
+        var demo = Main.class.getResource(path);
         if (demo == null) {
             throw new IOException("Cannot find " + path);
         }
