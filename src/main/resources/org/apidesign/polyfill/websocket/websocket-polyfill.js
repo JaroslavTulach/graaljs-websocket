@@ -23,10 +23,10 @@
            throw 'randomUUID';
         },
         getRandomValues : function(arr) {
-           for (let i = 0; i < arr.length; i++) {
-             arr[i] = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-           }
-           return arr;
+            for (let i = 0; i < arr.length; i++) {
+                arr[i] = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+            }
+            return arr;
         }
     };
 
