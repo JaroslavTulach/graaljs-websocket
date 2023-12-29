@@ -17,7 +17,7 @@ import io.helidon.websocket.WsListener;
 import io.helidon.websocket.WsSession;
 import io.helidon.websocket.WsUpgradeException;
 
-public final class WebSocketPolyfill {
+public final class WebSocketPolyfill implements ProxyExecutable {
 
     private static final String NEW_WEB_SOCKET_SERVER_DATA = "new-web-socket-server-data";
 
@@ -31,53 +31,47 @@ public final class WebSocketPolyfill {
                 .newBuilder("js", WebSocketPolyfill.class.getResource(WEBSOCKET_POLYFILL_JS))
                 .buildLiteral();
 
-        ctx.eval(polyfill).execute(new PolyfillApi());
+        ctx.eval(polyfill).execute(this);
 
         return ctx;
     }
 
-    private static final class PolyfillApi implements ProxyExecutable {
-
-        PolyfillApi() {
-        }
-
-        @Override
-        public Object execute(Value... arguments) {
-            var command = arguments[1].asString();
-            System.err.println(command + " " + Arrays.toString(arguments));
-            return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
-                case null -> {
-                    switch (command) {
-                        case NEW_WEB_SOCKET_SERVER_DATA -> {
-                            var port = arguments[2].getMember("port").asInt();
-                            yield new WebSocketServerData(port);
-                        }
-                        default ->
-                            throw new IllegalStateException(command);
+    @Override
+    public Object execute(Value... arguments) {
+        var command = arguments[1].asString();
+        System.err.println(command + " " + Arrays.toString(arguments));
+        return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
+            case null -> {
+                switch (command) {
+                    case NEW_WEB_SOCKET_SERVER_DATA -> {
+                        var port = arguments[2].getMember("port").asInt();
+                        yield new WebSocketServerData(port);
                     }
+                    default ->
+                        throw new IllegalStateException(command);
                 }
-                case WebSocketServerData webSocketServerData ->
-                    switch (command) {
-                        case "connection" ->
-                            webSocketServerData.onConnect(arguments[2]);
-                        default ->
-                            throw new IllegalStateException(command);
-                    };
-                case WebSocketData webSocketData ->
-                    switch (command) {
-                        case "send" ->
-                            webSocketData.send(arguments[2]);
-                        case "error" ->
-                            webSocketData.error = arguments[2];
-                        case "message" ->
-                            webSocketData.message = arguments[2];
-                        default ->
-                            throw new IllegalStateException(command);
-                    };
-                default ->
-                    throw new IllegalStateException(command);
-            };
-        }
+            }
+            case WebSocketServerData webSocketServerData ->
+                switch (command) {
+                    case "connection" ->
+                        webSocketServerData.onConnect(arguments[2]);
+                    default ->
+                        throw new IllegalStateException(command);
+                };
+            case WebSocketData webSocketData ->
+                switch (command) {
+                    case "send" ->
+                        webSocketData.send(arguments[2]);
+                    case "error" ->
+                        webSocketData.error = arguments[2];
+                    case "message" ->
+                        webSocketData.message = arguments[2];
+                    default ->
+                        throw new IllegalStateException(command);
+                };
+            default ->
+                throw new IllegalStateException(command);
+        };
     }
 
     private static final class WebSocketServerData {
