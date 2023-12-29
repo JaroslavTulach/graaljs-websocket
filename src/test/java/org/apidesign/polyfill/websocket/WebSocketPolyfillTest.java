@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apidesign.polyfill.timers.TimersPolyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
@@ -14,7 +15,7 @@ import org.junit.Test;
 
 public class WebSocketPolyfillTest {
 
-    private static CompletableFuture<Context> futureContext;
+    private static Context ctx;
     private static ExecutorService executor;
 
     public WebSocketPolyfillTest() {
@@ -29,13 +30,17 @@ public class WebSocketPolyfillTest {
             b.option("inspect", ":" + chromePort);
         }
         executor = Executors.newSingleThreadExecutor();
-        futureContext = WebSocketPolyfill.prepare(b, executor);
+        ctx = CompletableFuture
+                    .supplyAsync(() -> b.build(), executor)
+                    .thenApplyAsync(new TimersPolyfill(executor)::initialize, executor)
+                    .thenApplyAsync(new WebSocketPolyfill()::initialize, executor)
+                    .get();
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
         executor.close();
-        futureContext.get().close();
+        ctx.close();
     }
 
     @Test
@@ -46,8 +51,8 @@ public class WebSocketPolyfillTest {
                 .mimeType("application/javascript+module")
                 .build();
 
-        futureContext
-                .thenAcceptAsync(ctx -> {
+        CompletableFuture
+                .runAsync(() -> {
                     ctx.eval("js", """
                     globalThis.importScripts = function() {
                         debugger;
