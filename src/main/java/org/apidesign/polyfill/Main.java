@@ -2,6 +2,7 @@ package org.apidesign.polyfill;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
@@ -36,11 +37,18 @@ public class Main {
             var demoJs = Source.newBuilder("js", demo)
                     .mimeType("application/javascript+module")
                     .build();
+            var components = new Polyfill[]{
+                new TimersPolyfill(executor),
+                new WebSocketPolyfill()
+            };
+
             CompletableFuture
-                    .supplyAsync(() -> b.build(), executor)
-                    .thenApplyAsync(new TimersPolyfill(executor)::initialize, executor)
-                    .thenApplyAsync(new WebSocketPolyfill()::initialize, executor)
-                    .thenAcceptAsync(ctx -> ctx.eval(demoJs), executor)
+                    .supplyAsync(b::build, executor)
+                    .thenAcceptAsync(ctx -> {
+                        Arrays.stream(components).forEach(c -> c.initialize(ctx));
+
+                        ctx.eval(demoJs);
+                    })
                     .get();
             System.out.println("Press enter to exit");
             System.in.read();

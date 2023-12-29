@@ -3,6 +3,7 @@ package org.apidesign.polyfill.websocket;
 import java.util.Arrays;
 import java.util.Optional;
 
+import org.apidesign.polyfill.Polyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -17,7 +18,7 @@ import io.helidon.websocket.WsListener;
 import io.helidon.websocket.WsSession;
 import io.helidon.websocket.WsUpgradeException;
 
-public final class WebSocketPolyfill implements ProxyExecutable {
+public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
 
     private static final String NEW_WEB_SOCKET_SERVER_DATA = "new-web-socket-server-data";
 
@@ -26,14 +27,13 @@ public final class WebSocketPolyfill implements ProxyExecutable {
     public WebSocketPolyfill() {
     }
 
-    public Context initialize(Context ctx) {
-        Source polyfill = Source
+    @Override
+    public void initialize(Context ctx) {
+        Source webSocketPolyfillJs = Source
                 .newBuilder("js", WebSocketPolyfill.class.getResource(WEBSOCKET_POLYFILL_JS))
                 .buildLiteral();
 
-        ctx.eval(polyfill).execute(this);
-
-        return ctx;
+        ctx.eval(webSocketPolyfillJs).execute(this);
     }
 
     @Override

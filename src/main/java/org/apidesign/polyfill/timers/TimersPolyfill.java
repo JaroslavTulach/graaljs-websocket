@@ -8,12 +8,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.apidesign.polyfill.Polyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 import org.graalvm.polyglot.proxy.ProxyExecutable;
 
-public final class TimersPolyfill implements ProxyExecutable {
+public final class TimersPolyfill implements ProxyExecutable, Polyfill {
 
     private static final String SET_INTERVAL = "set-interval";
     private static final String CLEAR_INTERVAL = "clear-interval";
@@ -36,14 +37,13 @@ public final class TimersPolyfill implements ProxyExecutable {
         this.executor = executor;
     }
 
-    public Context initialize(Context ctx) {
+    @Override
+    public void initialize(Context ctx) {
         Source timersPolyfillJs = Source
                 .newBuilder("js", TimersPolyfill.class.getResource(TIMERS_POLYFILL_JS))
                 .buildLiteral();
 
         ctx.eval(timersPolyfillJs).execute(this);
-        
-        return ctx;
     }
 
     public Object setTimeout(Consumer<Object[]> func, long delay, Object... args) {
