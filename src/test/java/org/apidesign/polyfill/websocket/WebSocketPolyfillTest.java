@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apidesign.polyfill.crypto.CryptoPolyfill;
 import org.apidesign.polyfill.timers.TimersPolyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
@@ -32,8 +33,13 @@ public class WebSocketPolyfillTest {
         executor = Executors.newSingleThreadExecutor();
         ctx = CompletableFuture
                     .supplyAsync(() -> b.build(), executor)
-                    .thenApplyAsync(new TimersPolyfill(executor)::initialize, executor)
-                    .thenApplyAsync(new WebSocketPolyfill()::initialize, executor)
+                    .thenApplyAsync(ctx -> {
+                        new TimersPolyfill(executor).initialize(ctx);
+                        new CryptoPolyfill().initialize(ctx);
+                        new WebSocketPolyfill().initialize(ctx);
+
+                        return ctx;
+                    }, executor)
                     .get();
     }
 

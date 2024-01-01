@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 
+import org.apidesign.polyfill.crypto.CryptoPolyfill;
 import org.apidesign.polyfill.timers.TimersPolyfill;
 import org.apidesign.polyfill.websocket.WebSocketPolyfill;
 import org.graalvm.polyglot.Context;
@@ -39,6 +40,7 @@ public class Main {
                     .build();
             var components = new Polyfill[]{
                 new TimersPolyfill(executor),
+                new CryptoPolyfill(),
                 new WebSocketPolyfill()
             };
 
@@ -48,8 +50,9 @@ public class Main {
                         Arrays.stream(components).forEach(c -> c.initialize(ctx));
 
                         ctx.eval(demoJs);
-                    })
+                    }, executor)
                     .get();
+
             System.out.println("Press enter to exit");
             System.in.read();
         }
