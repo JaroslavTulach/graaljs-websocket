@@ -4,14 +4,7 @@
         debugger;
         return {};
     };
-    globalThis.Buffer = function(config) {
-        debugger;
-        return {};
-    };
-    globalThis.Buffer.from = function() {
-        debugger;
-        return {};
-    };
+
     globalThis.WebSocketServer = function(config) {
         var webSocketServerData = jvm(null, 'new-web-socket-server-data', config);
         var wss = {
