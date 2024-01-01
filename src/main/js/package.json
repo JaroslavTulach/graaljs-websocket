@@ -1,6 +1,7 @@
 {
   "private": true,
   "dependencies": {
+    "buffer": "^6.0.3",
     "util": "^0.12.5",
     "y-websocket": "^1.5.0",
     "yjs": "^13.6.9"

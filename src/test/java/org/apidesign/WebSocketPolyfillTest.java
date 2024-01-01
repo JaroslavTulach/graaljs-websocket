@@ -1,4 +1,4 @@
-package org.apidesign.polyfill.websocket;
+package org.apidesign;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -14,7 +14,7 @@ import org.junit.Test;
 
 public class WebSocketPolyfillTest {
 
-    private static CompletableFuture<Context> futureContext;
+    private static Context ctx;
     private static ExecutorService executor;
 
     public WebSocketPolyfillTest() {
@@ -29,13 +29,19 @@ public class WebSocketPolyfillTest {
             b.option("inspect", ":" + chromePort);
         }
         executor = Executors.newSingleThreadExecutor();
-        futureContext = WebSocketPolyfill.prepare(b, executor);
+        ctx = CompletableFuture
+                .supplyAsync(() -> {
+                    var context = b.build();
+                    WebSocket.initializePolyfill(context, executor);
+                    return context;
+                }, executor)
+                .get();
     }
 
     @AfterClass
     public static void tearDownClass() throws Exception {
         executor.close();
-        futureContext.get().close();
+        ctx.close();
     }
 
     @Test
@@ -46,8 +52,8 @@ public class WebSocketPolyfillTest {
                 .mimeType("application/javascript+module")
                 .build();
 
-        futureContext
-                .thenAcceptAsync(ctx -> {
+        CompletableFuture
+                .runAsync(() -> {
                     ctx.eval("js", """
                     globalThis.importScripts = function() {
                         debugger;
