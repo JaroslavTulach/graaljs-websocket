@@ -137,7 +137,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <netbeans.compile.on.save>none</netbeans.compile.on.save>
-        <exec.mainClass>org.apidesign.polyfill.Main</exec.mainClass>
+        <exec.mainClass>org.apidesign.WebSocket</exec.mainClass>
         <inspectPort></inspectPort>
         <exec.vmArgs>-DinspectPort=${inspectPort}</exec.vmArgs>
     </properties>
