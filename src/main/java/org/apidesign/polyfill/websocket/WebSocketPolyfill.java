@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apidesign.polyfill.Polyfill;
+import org.apidesign.polyfill.timers.TimersPolyfill;
+import org.apidesign.polyfill.crypto.CryptoPolyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -47,6 +49,12 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
 
     @Override
     public void initialize(Context ctx) {
+        var timers = new TimersPolyfill(executor);
+        timers.initialize(ctx);
+
+        var crypto = new CryptoPolyfill();
+        crypto.initialize(ctx);
+
         Source webSocketPolyfillJs = Source
                 .newBuilder("js", WebSocketPolyfill.class.getResource(WEBSOCKET_POLYFILL_JS))
                 .buildLiteral();
