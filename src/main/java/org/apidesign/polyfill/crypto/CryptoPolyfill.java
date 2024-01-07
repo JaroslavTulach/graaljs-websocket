@@ -34,7 +34,7 @@ public final class CryptoPolyfill implements ProxyExecutable, Polyfill {
 
         return switch (command) {
             case RANDOM_UUID ->
-                UUID.randomUUID();
+                UUID.randomUUID().toString();
 
             default ->
                 throw new IllegalStateException(command);

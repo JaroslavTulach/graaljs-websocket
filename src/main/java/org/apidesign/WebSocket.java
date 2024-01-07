@@ -11,6 +11,7 @@ import org.apidesign.polyfill.crypto.CryptoPolyfill;
 import org.apidesign.polyfill.timers.TimersPolyfill;
 import org.apidesign.polyfill.websocket.WebSocketPolyfill;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
 
@@ -23,7 +24,7 @@ public class WebSocket {
         Polyfill[] components = new Polyfill[]{
             new TimersPolyfill(executor),
             new CryptoPolyfill(),
-            new WebSocketPolyfill()
+            new WebSocketPolyfill(executor)
         };
 
         for (Polyfill component : components) {
@@ -38,8 +39,14 @@ public class WebSocket {
             throw new IOException("Cannot find " + path);
         }
         var commonJsRoot = new File(demo.toURI()).getParent();
+
+        HostAccess hostAccess = HostAccess.newBuilder(HostAccess.EXPLICIT)
+                .allowArrayAccess(true)
+                .build();
+
         var b = Context.newBuilder("js")
                 .allowIO(IOAccess.ALL)
+                .allowHostAccess(hostAccess)
                 .allowExperimentalOptions(true)
                 .option("js.commonjs-require", "true")
                 .option("js.commonjs-require-cwd", commonJsRoot);
