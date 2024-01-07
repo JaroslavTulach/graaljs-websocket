@@ -29,7 +29,7 @@ public final class CryptoPolyfill implements ProxyExecutable, Polyfill {
 
     @Override
     public Object execute(Value... arguments) {
-        var command = arguments[1].asString();
+        var command = arguments[0].asString();
         System.err.println(command + " " + Arrays.toString(arguments));
 
         return switch (command) {

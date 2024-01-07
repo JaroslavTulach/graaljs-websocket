@@ -26,6 +26,7 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
     private static final String ADD_EVENT_LISTENER = "add-event-listener";
     private static final String REMOVE_EVENT_LISTENER = "remove-event-listener";
     private static final String GET_EVENT_LISTENERS = "get-event-listeners";
+    private static final String DISPATCH_EVENT = "dispatch-event";
     private static final String SET_ON_LISTENER = "set-on-listener";
     private static final String GET_ON_LISTENER = "get-on-listener";
     private static final String NEW_WEB_SOCKET_CONECTION = "new-web-socket-connection";
@@ -33,7 +34,6 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
     private static final String WEB_SOCKET_SEND_BINARY = "web-socket-send-binary";
     private static final String WEB_SOCKET_CLOSE = "web-socket-close";
     private static final String WEB_SOCKET_TERMINATE = "web-socket-terminate";
-    private static final String NEW_WEB_SOCKET_SERVER_DATA = "new-web-socket-server-data";
 
     private static final String WEBSOCKET_POLYFILL_JS = "websocket-polyfill.js";
 
@@ -87,6 +87,19 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
                 var type = arguments[1].asString();
                 var set = listeners.get(type);
                 yield set == null ? new Value[]{} : set.toArray();
+            }
+
+            case DISPATCH_EVENT -> {
+                var type = arguments[1].asString();
+                var event = arguments[2];
+
+                listeners.getOrDefault(type, Set.of()).forEach(listener -> {
+                    try {
+                        listener.executeVoid(event);
+                    } catch (Exception e) {
+                    }
+                });
+                yield null;
             }
 
             case SET_ON_LISTENER -> {

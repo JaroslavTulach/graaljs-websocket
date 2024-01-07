@@ -46,11 +46,11 @@ public final class TimersPolyfill implements ProxyExecutable, Polyfill {
         ctx.eval(timersPolyfillJs).execute(this);
     }
 
-    public Object setTimeout(Consumer<Object[]> func, long delay, Object... args) {
+    public Object setTimeout(Value func, long delay, Value[] args) {
         return scheduledExecutor.schedule(execute(func, args), delay, TIME_UNIT);
     }
 
-    public Object setInterval(Consumer<Object[]> func, long delay, Object... args) {
+    public Object setInterval(Value func, long delay, Value[] args) {
         return scheduledExecutor.scheduleAtFixedRate(execute(func, args), delay, delay, TIME_UNIT);
     }
 
@@ -64,10 +64,6 @@ public final class TimersPolyfill implements ProxyExecutable, Polyfill {
         clearTimeout(actionId);
     }
 
-    private Runnable execute(Consumer<Object[]> func, Object[] arg) {
-        return () -> executor.execute(() -> func.accept(arg));
-    }
-
     @Override
     public Object execute(Value... arguments) {
         String command = arguments[0].asString();
@@ -75,9 +71,9 @@ public final class TimersPolyfill implements ProxyExecutable, Polyfill {
 
         return switch (command) {
             case SET_INTERVAL -> {
-                var func = arguments[1].as(Consumer.class);
+                var func = arguments[1];
                 var delay = arguments[2].asLong();
-                var args = arguments[3].as(Object[].class);
+                var args = arguments[3].as(Value[].class);
                 yield setInterval(func, delay, args);
             }
             case CLEAR_INTERVAL -> {
@@ -86,9 +82,9 @@ public final class TimersPolyfill implements ProxyExecutable, Polyfill {
                 yield null;
             }
             case SET_TIMEOUT -> {
-                var func = arguments[1].as(Consumer.class);
+                var func = arguments[1];
                 var delay = arguments[2].asLong();
-                var args = arguments[3].as(Object[].class);
+                var args = arguments[3].as(Value[].class);
                 yield setTimeout(func, delay, args);
             }
             case CLEAR_TIMEOUT -> {
@@ -101,4 +97,7 @@ public final class TimersPolyfill implements ProxyExecutable, Polyfill {
         };
     }
 
+    private Runnable execute(Value func, Value[] args) {
+        return () -> executor.execute(() -> func.executeVoid(args));
+    }
 }

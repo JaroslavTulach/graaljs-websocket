@@ -155,17 +155,10 @@
         };
 
         WebSocket.prototype.dispatchEvent = function (event) {
-            var listeners = jvm('get-event-listeners', event.type);
-
             event.target = this;
-            // event.timeStamp = TODO
+            // event.timeStamp = ...
 
-            for (const listener of listeners) {
-                try {
-                    listener(event);
-                } catch (e) {
-                };
-            };
+            jvm('dispatch-event', event.type, event);
         };
 
         WebSocket.prototype._handle_open = function () {
