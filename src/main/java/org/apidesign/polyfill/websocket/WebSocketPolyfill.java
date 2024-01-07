@@ -10,8 +10,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apidesign.polyfill.Polyfill;
-import org.apidesign.polyfill.timers.TimersPolyfill;
 import org.apidesign.polyfill.crypto.CryptoPolyfill;
+import org.apidesign.polyfill.timers.TimersPolyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -167,6 +167,7 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
                 var connection = arguments[1].as(WebSocketConnection.class);
                 var data = arguments[2].as(int[].class);
 
+                // Convert unsigned Uint8Array to byte[]
                 var bytes = new byte[data.length];
                 for (int i = 0; i < data.length; i++) {
                     bytes[i] = (byte) data[i];
@@ -220,6 +221,8 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
 
         @Override
         public void onMessage(WsSession session, BufferData buffer, boolean last) {
+            // Passing byte array to JS requires `HostAccess.allowArrayAccess()`
+            // TODO: try passing ByteBuffer to avoid copying
             Object data = buffer.readBytes();
             executor.execute(() -> handleMessage.executeVoid(data));
 

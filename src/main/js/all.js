@@ -11,7 +11,7 @@ wsProvider.on('status', event => {
 
 const yarray = doc.getArray('my-array');
 yarray.observe(event => {
-  console.log('yarray was modified', JSON.stringify(event.target));
+  console.log('yarray was modified:', yarray.toArray());
 });
 // every time a local or remote client modifies yarray, the observer is called
-yarray.insert(0, ['val']);
+yarray.push(['val']);

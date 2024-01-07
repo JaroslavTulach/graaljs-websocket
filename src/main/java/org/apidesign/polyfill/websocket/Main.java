@@ -37,6 +37,7 @@ public class Main {
         if (chromePort > 0) {
             b.option("inspect", ":" + chromePort);
         }
+
         try (var executor = Executors.newSingleThreadExecutor()) {
             var webSocketPolyfill = new WebSocketPolyfill(executor);
             var demoJs = Source.newBuilder("js", demo)
