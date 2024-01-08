@@ -226,8 +226,6 @@ public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
             Object data = buffer.readBytes();
             executor.execute(() -> handleMessage.executeVoid(data));
 
-            session.subProtocol();
-
             System.err.println("WebSocketListener.onMessageBinary\n" + buffer.debugDataHex(true));
         }
 
