@@ -2,10 +2,8 @@ package org.apidesign.polyfill.websocket;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 
+import org.apidesign.polyfill.Polyfill;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -20,102 +18,60 @@ import io.helidon.websocket.WsListener;
 import io.helidon.websocket.WsSession;
 import io.helidon.websocket.WsUpgradeException;
 
-public final class WebSocketPolyfill {
+public final class WebSocketPolyfill implements ProxyExecutable, Polyfill {
 
     private static final String NEW_WEB_SOCKET_SERVER_DATA = "new-web-socket-server-data";
-    private static final String SET_INTERVAL = "set-interval";
-    private static final String CLEAR_INTERVAL = "clear-interval";
-    private static final String SET_TIMEOUT = "set-timeout";
-    private static final String CLEAR_TIMEOUT = "clear-timeout";
 
     private static final String WEBSOCKET_POLYFILL_JS = "websocket-polyfill.js";
 
-    private WebSocketPolyfill() {
+    public WebSocketPolyfill() {
     }
 
-    public static CompletableFuture<Context> prepare(Context.Builder contextBuilder, ExecutorService executor) {
-        CompletableFuture<Context> futureContext = new CompletableFuture<>();
-        TimersPolyfill timers = new TimersPolyfill(executor);
-        Source polyfill = Source
+    @Override
+    public void initialize(Context ctx) {
+        Source webSocketPolyfillJs = Source
                 .newBuilder("js", WebSocketPolyfill.class.getResource(WEBSOCKET_POLYFILL_JS))
                 .buildLiteral();
 
-        executor.execute(() -> {
-            Context ctx = contextBuilder.build();
-            ctx.eval(polyfill).execute(new PolyfillApi(timers));
-            futureContext.complete(ctx);
-        });
-
-        return futureContext;
+        ctx.eval(webSocketPolyfillJs).execute(this);
     }
 
-    private static final class PolyfillApi implements ProxyExecutable {
-
-        private final TimersPolyfill timers;
-
-        PolyfillApi(TimersPolyfill timers) {
-            this.timers = timers;
-        }
-
-        @Override
-        public Object execute(Value... arguments) {
-            var command = arguments[1].asString();
-            System.err.println(command + " " + Arrays.toString(arguments));
-            return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
-                case null -> {
-                    switch (command) {
-                        case NEW_WEB_SOCKET_SERVER_DATA -> {
-                            var port = arguments[2].getMember("port").asInt();
-                            yield new WebSocketServerData(port);
-                        }
-                        case SET_INTERVAL -> {
-                            var func = arguments[2].as(Consumer.class);
-                            var delay = arguments[3].asLong();
-                            var args = arguments[4].as(Object[].class);
-                            yield timers.setInterval(func, delay, args);
-                        }
-                        case CLEAR_INTERVAL -> {
-                            var intervalId = arguments[2].asHostObject();
-                            timers.clearInterval(intervalId);
-                            yield null;
-                        }
-                        case SET_TIMEOUT -> {
-                            var func = arguments[2].as(Consumer.class);
-                            var delay = arguments[3].asLong();
-                            var args = arguments[4].as(Object[].class);
-                            yield timers.setTimeout(func, delay, args);
-                        }
-                        case CLEAR_TIMEOUT -> {
-                            var timeoutId = arguments[2].asHostObject();
-                            timers.clearTimeout(timeoutId);
-                            yield null;
-                        }
-                        default ->
-                            throw new IllegalStateException(command);
+    @Override
+    public Object execute(Value... arguments) {
+        var command = arguments[1].asString();
+        System.err.println(command + " " + Arrays.toString(arguments));
+        return switch (arguments[0].isNull() ? null : arguments[0].asHostObject()) {
+            case null -> {
+                switch (command) {
+                    case NEW_WEB_SOCKET_SERVER_DATA -> {
+                        var port = arguments[2].getMember("port").asInt();
+                        yield new WebSocketServerData(port);
                     }
+                    default ->
+                        throw new IllegalStateException(command);
                 }
-                case WebSocketServerData webSocketServerData ->
-                    switch (command) {
-                        case "connection" ->
-                            webSocketServerData.onConnect(arguments[2]);
-                        default ->
-                            throw new IllegalStateException(command);
-                    };
-                case WebSocketData webSocketData ->
-                    switch (command) {
-                        case "send" ->
-                            webSocketData.send(arguments[2]);
-                        case "error" ->
-                            webSocketData.error = arguments[2];
-                        case "message" ->
-                            webSocketData.message = arguments[2];
-                        default ->
-                            throw new IllegalStateException(command);
-                    };
-                default ->
-                    throw new IllegalStateException(command);
-            };
-        }
+            }
+            case WebSocketServerData webSocketServerData ->
+                switch (command) {
+                    case "connection" ->
+                        webSocketServerData.onConnect(arguments[2]);
+                    default ->
+                        throw new IllegalStateException(command);
+                };
+            case WebSocketData webSocketData ->
+                switch (command) {
+                    case "send" ->
+                        webSocketData.send(arguments[2]);
+                    case "error" ->
+                        webSocketData.error = arguments[2];
+                    case "message" ->
+                        webSocketData.message = arguments[2];
+                    default ->
+                        throw new IllegalStateException(command);
+                };
+            default ->
+                throw new IllegalStateException(command);
+        };
     }
 
     private static final class WebSocketServerData {
