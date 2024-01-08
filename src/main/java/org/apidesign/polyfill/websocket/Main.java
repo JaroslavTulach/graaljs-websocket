@@ -1,45 +1,35 @@
-package org.apidesign;
+package org.apidesign.polyfill.websocket;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apidesign.polyfill.Polyfill;
-import org.apidesign.polyfill.crypto.CryptoPolyfill;
-import org.apidesign.polyfill.timers.TimersPolyfill;
-import org.apidesign.polyfill.websocket.WebSocketPolyfill;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.io.IOAccess;
 
-public class WebSocket {
+public class Main {
 
-    private WebSocket() {
-    }
-
-    public static void initializePolyfill(Context ctx, ExecutorService executor) {
-        Polyfill[] components = new Polyfill[]{
-            new TimersPolyfill(executor),
-            new CryptoPolyfill(),
-            new WebSocketPolyfill()
-        };
-
-        for (Polyfill component : components) {
-            component.initialize(ctx);
-        }
+    private Main() {
     }
 
     public static void main(String[] args) throws Exception {
         var path = "/all-y-websocket.js";
-        var demo = WebSocket.class.getResource(path);
+        var demo = Main.class.getResource(path);
         if (demo == null) {
             throw new IOException("Cannot find " + path);
         }
         var commonJsRoot = new File(demo.toURI()).getParent();
+
+        HostAccess hostAccess = HostAccess.newBuilder(HostAccess.EXPLICIT)
+                .allowArrayAccess(true)
+                .build();
+
         var b = Context.newBuilder("js")
                 .allowIO(IOAccess.ALL)
+                .allowHostAccess(hostAccess)
                 .allowExperimentalOptions(true)
                 .option("js.commonjs-require", "true")
                 .option("js.commonjs-require-cwd", commonJsRoot);
@@ -47,7 +37,9 @@ public class WebSocket {
         if (chromePort > 0) {
             b.option("inspect", ":" + chromePort);
         }
+
         try (var executor = Executors.newSingleThreadExecutor()) {
+            var webSocketPolyfill = new WebSocketPolyfill(executor);
             var demoJs = Source.newBuilder("js", demo)
                     .mimeType("application/javascript+module")
                     .build();
@@ -55,7 +47,7 @@ public class WebSocket {
             CompletableFuture
                     .supplyAsync(b::build, executor)
                     .thenAcceptAsync(ctx -> {
-                        initializePolyfill(ctx, executor);
+                        webSocketPolyfill.initialize(ctx);
                         ctx.eval(demoJs);
                     }, executor)
                     .get();
