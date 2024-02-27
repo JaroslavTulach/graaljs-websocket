@@ -1,9 +1,17 @@
 (function (jvm) {
 
+    //
+    // EventBase
+    //
+
     var EventBase = {
         bubbles: false,
         cancelable: false
     };
+
+    //
+    // WebSocket
+    //
 
     var WebSocket = (function () {
 
@@ -17,15 +25,25 @@
             }
             this.protocols_ = protocols;
 
-            this.connection_ = jvm(
-                'new-web-socket-connection',
-                url,
-                protocols,
-                this._handle_open.bind(this),
-                this._handle_close.bind(this),
-                this._handle_error.bind(this),
-                this._handle_message.bind(this)
-            );
+            if (url == null && protocols == null) {
+                this.connection_ = jvm(
+                    'new-web-socket-connection',
+                    this._handle_open.bind(this),
+                    this._handle_close.bind(this),
+                    this._handle_error.bind(this),
+                    this._handle_message.bind(this)
+                );
+            } else {
+                this.connection_ = jvm(
+                    'new-web-socket',
+                    url,
+                    protocols,
+                    this._handle_open.bind(this),
+                    this._handle_close.bind(this),
+                    this._handle_error.bind(this),
+                    this._handle_message.bind(this)
+                );
+            }
         }
 
         //
@@ -78,10 +96,10 @@
 
         Object.defineProperty(WebSocket.prototype, "onopen", {
             get: function () {
-                return jvm('get-on-listener', 'open');
+                return jvm('get-on-listener', this.connection_, 'open');
             },
             set: function (listener) {
-                jvm('set-on-listener', 'open', listener);
+                jvm('set-on-listener', this.connection_, 'open', listener);
             },
             enumerable: false,
             configurable: true
@@ -89,10 +107,10 @@
 
         Object.defineProperty(WebSocket.prototype, "onclose", {
             get: function () {
-                return jvm('get-on-listener', 'close');
+                return jvm('get-on-listener', this.connection_, 'close');
             },
             set: function (listener) {
-                jvm('set-on-listener', 'close', listener);
+                jvm('set-on-listener', this.connection_, 'close', listener);
             },
             enumerable: false,
             configurable: true
@@ -100,10 +118,10 @@
 
         Object.defineProperty(WebSocket.prototype, "onmessage", {
             get: function () {
-                return jvm('get-on-listener', 'message');
+                return jvm('get-on-listener', this.connection_, 'message');
             },
             set: function (listener) {
-                jvm('set-on-listener', 'message', listener);
+                jvm('set-on-listener', this.connection_, 'message', listener);
             },
             enumerable: false,
             configurable: true
@@ -111,10 +129,10 @@
 
         Object.defineProperty(WebSocket.prototype, "onerror", {
             get: function () {
-                return jvm('get-on-listener', 'error');
+                return jvm('get-on-listener', this.connection_, 'error');
             },
             set: function (listener) {
-                jvm('set-on-listener', 'error', listener);
+                jvm('set-on-listener', this.connection_, 'error', listener);
             },
             enumerable: false,
             configurable: true
@@ -147,19 +165,39 @@
         //
 
         WebSocket.prototype.addEventListener = function (type, listener) {
-            jvm('add-event-listener', type, listener);
+            jvm('add-event-listener', this.connection_, type, listener);
         };
 
         WebSocket.prototype.removeEventListener = function (type, listener) {
-            jvm('remove-event-listener', type, listener);
+            jvm('remove-event-listener', this.connection_, type, listener);
         };
 
         WebSocket.prototype.dispatchEvent = function (event) {
             event.target = this;
             // event.timeStamp = ...
 
-            jvm('dispatch-event', event.type, event);
+            jvm('dispatch-event', this.connection_, event.type, event);
         };
+
+        //
+        // EventEmitter
+        //
+
+        WebSocket.prototype.on = function(type, listener) {
+            this.addEventListener(type, event => {
+                switch (type) {
+                    case 'message':
+                        listener(event.data);
+                        break;
+                    default:
+                        listener(event);
+                }
+            })
+        };
+
+        //
+        // Session callbacks
+        //
 
         WebSocket.prototype._handle_open = function () {
             this.state_ = WebSocket.OPEN;
@@ -199,25 +237,46 @@
         return WebSocket;
     }());
 
+    //
+    // WebSocketServer
+    //
+
+    var WebSocketServer = (function () {
+
+        function WebSocketServer(config) {
+            this.config_ = config;
+
+            this.server_ = jvm(
+                'new-web-socket-server',
+                config.host,
+                config.port,
+                this._handle_connect.bind(this)
+            );
+        }
+
+        WebSocketServer.prototype.start = function() {
+            jvm('web-socket-server-start', this.server_);
+        }
+
+        WebSocketServer.prototype.onconnect = function(socket, url) {};
+
+        //
+        // Connection callbacks
+        //
+
+        WebSocketServer.prototype._handle_connect = function () {
+            var ws = new WebSocket(null, null);
+
+            ws.addEventListener('open', () => this.onconnect(ws, '/'));
+
+            return ws.connection_;
+        };
+
+        return WebSocketServer;
+    }());
+
     globalThis.WebSocket = WebSocket;
 
-    globalThis.WebSocketServer = function (config) {
-        debugger;
-        var webSocketServerData = jvm(null, 'new-web-socket-server-data', config);
-        var wss = {
-            on: function (type, callback) {
-                var webSocketData = jvm(webSocketServerData, type, callback);
-                var ws = {
-                    on: function (type, callback) {
-                        jvm(webSocketData, type, callback);
-                    },
-                    send: function (msg) {
-                        jvm(webSocketData, "send", msg);
-                    }
-                }
-                callback(ws);
-            }
-        };
-        return wss;
-    };
+    globalThis.WebSocketServer = WebSocketServer;
+
 })

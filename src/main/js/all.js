@@ -6,7 +6,7 @@ globalThis.Buffer = require('buffer').Buffer;
 const doc = new Y.Doc();
 const wsProvider = new WebsocketProvider('ws://[::1]:1234', 'my-roomname', doc);
 wsProvider.on('status', event => {
-  print(event.status);
+  console.log(event.status);
 });
 
 const yarray = doc.getArray('my-array');
