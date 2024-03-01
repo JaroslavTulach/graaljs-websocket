@@ -12,14 +12,15 @@ import org.graalvm.polyglot.io.IOAccess;
 
 public class Main {
 
+    private static final String DEMO_PATH = "/all-y-websocket.js";
+
     private Main() {
     }
 
     public static void main(String[] args) throws Exception {
-        var path = "/all-y-websocket.js";
-        var demo = Main.class.getResource(path);
+        var demo = Main.class.getResource(DEMO_PATH);
         if (demo == null) {
-            throw new IOException("Cannot find " + path);
+            throw new IOException("Cannot find " + DEMO_PATH);
         }
         var commonJsRoot = new File(demo.toURI()).getParent();
 
